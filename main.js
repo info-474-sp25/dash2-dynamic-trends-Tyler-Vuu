@@ -26,8 +26,7 @@ d3.csv("weather.csv").then(data => {
     // 2.b: ... AND TRANSFORM DATA
     data.forEach(d => {
         d.date = new Date(d.date);
-        d.temp = +d.mean_temperature_f;
-        d.precip = +d.average_precipitation;
+        d.temp = +d.actual_mean_temp;
     });
 
     // 3.a: SET SCALES FOR CHART 1 (Mean Temp)
@@ -57,33 +56,11 @@ d3.csv("weather.csv").then(data => {
 
     // 6.a: ADD LABELS FOR CHART 1
     svg1_RENAME.append("text")
-        .attr("x", width / 2)
-        .attr("y", -20)
-        .attr("text-anchor", "middle")
-        .style("font-size", "16px")
-        .text("Mean Temperature 07-2014 → 07-2015");
-
-    svg1_RENAME.append("text")
         .attr("transform", "rotate(-90)")
         .attr("y", -50)
         .attr("x", -height / 2)
         .attr("text-anchor", "middle")
         .text("Mean Temperature (°F)");
-    // 3.a: SET SCALES FOR CHART 1
-
-
-    // 4.a: PLOT DATA FOR CHART 1
-
-
-    // 5.a: ADD AXES FOR CHART 1
-
-
-    // 6.a: ADD LABELS FOR CHART 1
-
-
-    // 7.a: ADD INTERACTIVITY FOR CHART 1
-    
-
     // ==========================================
     //         CHART 2 (if applicable)
     // ==========================================
