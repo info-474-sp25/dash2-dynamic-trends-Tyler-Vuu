@@ -1,5 +1,5 @@
 // 1: SET GLOBAL VARIABLES
-const margin = { top: 50, right: 30, bottom: 60, left: 70 };
+const margin = { top: 50, right: 30, bottom: 100, left: 70 };
 const width = 900 - margin.left - margin.right;
 const height = 400 - margin.top - margin.bottom;
 
@@ -22,9 +22,7 @@ d3.csv("weather.csv").then(data => {
 
     fullData = data;
     updateChart(getSelectedCities());
-}).catch(error => {
-    console.error("Error loading CSV:", error);
-});
+})
 
 // 3: Get Selected Cities from Checkboxes
 function getSelectedCities() {
@@ -61,7 +59,7 @@ function updateChart(selectedCities) {
 
     const color = d3.scaleOrdinal(d3.schemeTableau10);
 
-    // DRAW LINES for each city
+    // graphs for each city
     for (const [city, values] of cityData.entries()) {
         // Sort values by date to ensure proper line drawing
         const sortedValues = values.sort((a, b) => a.date - b.date);
@@ -93,15 +91,15 @@ function updateChart(selectedCities) {
         .attr("text-anchor", "middle")
         .text("Mean Temperature (°F)");
 
-    // Add legend
+    // legend
     const legend = svg1.append("g")
         .attr("class", "legend")
-        .attr("transform", `translate(${width - 120}, 20)`);
+        .attr("transform", `translate(0, ${height + 40})`);
 
-    let legendY = 0;
+    let legendX = 0;
     for (const city of selectedCities) {
         const legendItem = legend.append("g")
-            .attr("transform", `translate(0, ${legendY})`);
+            .attr("transform", `translate(${legendX}, 0)`);
 
         legendItem.append("line")
             .attr("x1", 0)
@@ -116,7 +114,8 @@ function updateChart(selectedCities) {
             .style("font-size", "12px")
             .text(city);
 
-        legendY += 20;
+        // Calculate width of this legend item for next positioning
+        legendX += city.length * 8 + 40; // Approximate width based on text length
     }
 }
 
