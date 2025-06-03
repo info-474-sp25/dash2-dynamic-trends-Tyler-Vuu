@@ -3,129 +3,98 @@ const margin = { top: 50, right: 30, bottom: 60, left: 70 };
 const width = 900 - margin.left - margin.right;
 const height = 400 - margin.top - margin.bottom;
 
-// Create SVG containers for both charts
-const svg1_RENAME = d3.select("#lineChart1") // If you change this ID, you must change it in index.html too
+const svg1 = d3.select("#lineChart1")
     .append("svg")
     .attr("width", width + margin.left + margin.right)
     .attr("height", height + margin.top + margin.bottom)
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
-const svg2_RENAME = d3.select("#lineChart2")
-    .append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-    .append("g")
-    .attr("transform", `translate(${margin.left},${margin.top})`);
+let fullData = []; // Global variable to hold original data
 
-// (If applicable) Tooltip element for interactivity
-// const tooltip = ...
-
-// 2.a: LOAD...
+// 2: LOAD CSV
 d3.csv("weather.csv").then(data => {
-    // 2.b: ... AND TRANSFORM DATA
     data.forEach(d => {
         d.date = new Date(d.date);
         d.temp = +d.actual_mean_temp;
+        d.city = d.city.trim(); // Ensure no extra spaces
     });
 
-    // 3.a: SET SCALES FOR CHART 1 (Mean Temp)
-    const x1 = d3.scaleTime().domain(d3.extent(data, d => d.date)).range([0, width]);
-    const y1 = d3.scaleLinear().domain([0, d3.max(data, d => d.temp)]).nice().range([height, 0]);
+    fullData = data;
+    updateChart(getSelectedCities());
+});
 
-    // 4.a: PLOT DATA FOR CHART 1
-    svg1_RENAME.append("path")
-        .datum(data)
-        .attr("fill", "none")
-        .attr("stroke", "steelblue")
-        .attr("stroke-width", 1.5)
-        .attr("d", d3.line()
-            .x(d => x1(d.date))
-            .y(d => y1(d.temp))
-        );
+// 3: Get Selected Cities from Checkboxes
+function getSelectedCities() {
+    const checkboxes = document.querySelectorAll(".cityCheckbox:checked");
+    return Array.from(checkboxes).map(cb => cb.value);
+}
 
-    // 5.a: ADD AXES FOR CHART 1
-    svg1_RENAME.append("g")
+// 4: Update Chart Based on Selected Cities
+function updateChart(selectedCities) {
+    // Clear existing content
+    svg1.selectAll("*").remove();
+
+    const filteredData = fullData.filter(d => selectedCities.includes(d.city));
+
+    if (filteredData.length === 0) return;
+
+    // GROUP DATA BY CITY
+    const cityData = d3.group(filteredData, d => d.city);
+
+    // X and Y scales
+    const x = d3.scaleTime()
+        .domain(d3.extent(filteredData, d => d.date))
+        .range([0, width]);
+
+    const y = d3.scaleLinear()
+        .domain([0, d3.max(filteredData, d => d.temp)]).nice()
+        .range([height, 0]);
+
+    // Line generator
+    const line = d3.line()
+        .x(d => x(d.date))
+        .y(d => y(d.temp));
+
+    const color = d3.scaleOrdinal(d3.schemeTableau10);
+
+    // DRAW LINES for each city
+    let i = 0;
+    for (const [city, values] of cityData.entries()) {
+        svg1.append("path")
+            .datum(values)
+            .attr("fill", "none")
+            .attr("stroke", color(city))
+            .attr("stroke-width", 1.5)
+            .attr("d", line);
+
+        // Optional: Add labels or legends here
+        i++;
+    }
+
+    // X Axis
+    svg1.append("g")
         .attr("transform", `translate(0,${height})`)
-        .call(d3.axisBottom(x1).ticks(d3.timeMonth.every(1)).tickFormat(d3.timeFormat("%b-%Y")))
+        .call(d3.axisBottom(x).ticks(d3.timeMonth.every(1)).tickFormat(d3.timeFormat("%b-%Y")))
         .selectAll("text")
         .attr("transform", "rotate(-45)")
         .style("text-anchor", "end");
 
-    svg1_RENAME.append("g").call(d3.axisLeft(y1));
+    // Y Axis
+    svg1.append("g").call(d3.axisLeft(y));
 
-    // 6.a: ADD LABELS FOR CHART 1
-    svg1_RENAME.append("text")
+    // Y Label
+    svg1.append("text")
         .attr("transform", "rotate(-90)")
         .attr("y", -50)
         .attr("x", -height / 2)
         .attr("text-anchor", "middle")
         .text("Mean Temperature (°F)");
-    
-
-
-
-
-
-
-
-        // Populate year dropdown
-const years = Array.from(new Set(data.map(d => d.date.getFullYear())));
-years.forEach(year => {
-    d3.select("#yearSelect").append("option").attr("value", year).text(year);
-});
-
-// Filtering function
-function updateChart(selectedYear) {
-    const filteredData = selectedYear === "all" ? data : data.filter(d => d.date.getFullYear() == selectedYear);
-
-    // Update scales
-    x1.domain(d3.extent(filteredData, d => d.date));
-    y1.domain([0, d3.max(filteredData, d => d.temp)]).nice();
-
-    // Update line
-    svg1_RENAME.selectAll("path")
-        .datum(filteredData)
-        .transition()
-        .duration(750)
-        .attr("d", d3.line()
-            .x(d => x1(d.date))
-            .y(d => y1(d.temp))
-        );
-
-    // Update circles
-    svg1_RENAME.selectAll("circle").remove();
-    svg1_RENAME.selectAll("circle")
-        .data(filteredData)
-        .enter()
-        .append("circle")
-        .attr("cx", d => x1(d.date))
-        .attr("cy", d => y1(d.temp))
-        .attr("r", 3)
-        .attr("fill", "steelblue")
-        .on("mouseover", (event, d) => {
-            tooltip.transition().duration(200).style("opacity", 1);
-            tooltip.html(`<strong>Date:</strong> ${d3.timeFormat("%B %d, %Y")(d.date)}<br><strong>Temp:</strong> ${d.temp} °F`)
-                .style("left", (event.pageX + 10) + "px")
-                .style("top", (event.pageY - 28) + "px");
-        })
-        .on("mouseout", () => tooltip.transition().duration(300).style("opacity", 0));
-
-    // Update axes
-    svg1_RENAME.select("g").call(d3.axisLeft(y1));
-    svg1_RENAME.select("g:nth-of-type(2)")
-        .transition()
-        .duration(750)
-        .call(d3.axisBottom(x1).ticks(d3.timeMonth.every(1)).tickFormat(d3.timeFormat("%b-%Y")))
-        .selectAll("text")
-        .attr("transform", "rotate(-45)")
-        .style("text-anchor", "end");
 }
 
-// Bind dropdown to update
-d3.select("#yearSelect").on("change", function () {
-    updateChart(this.value);
-});
-
-
+// 5: Add Event Listeners to Checkboxes
+document.querySelectorAll(".cityCheckbox").forEach(cb => {
+    cb.addEventListener("change", () => {
+        updateChart(getSelectedCities());
+    });
 });

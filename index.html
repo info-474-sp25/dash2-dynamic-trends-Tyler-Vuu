@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,38 +8,45 @@
     <script src="https://d3js.org/d3.v7.min.js"></script> <!-- Load D3 library -->
     <link rel="stylesheet" href="style.css"> <!-- Connect to style.css for styles -->
 </head>
+
 <body class="vertical-container">
     <!-- HEADER -->
     <div class="item">
         <h1>Dashboard 2 Weather</h1>
         <p><strong>Author:</strong> Tyler Vuu </p>
-        <p><strong>Documentation:</strong> <a href="https://docs.google.com/document/d/1B4gb660wziyJhUBhLRun5V0_nAcHpw8PVYmmzKBgsYI/edit?usp=sharing" target="_blank">Link</a></p>
+        <p><strong>Documentation:</strong> <a
+                href="https://docs.google.com/document/d/1B4gb660wziyJhUBhLRun5V0_nAcHpw8PVYmmzKBgsYI/edit?usp=sharing"
+                target="_blank">Link</a></p>
     </div>
-    
+
     <!-- INTERACTIVE WIDGETS -->
-    <div class="item horizontal-container">
-        <div class="item"><!-- Your widget 1 code goes here. -->
-            <label for="yearSelect">Select Year:</label>
-            <select id="yearSelect">
-    <option value="all">All Years</option>
-        </select>
+    <div class="item">
+        <label><strong>Filter by City:</strong></label><br>
 
-        </div>
+        <label><input type="checkbox" class="cityCheckbox" value="Indianapolis"> Indianapolis</label><br>
+        <label><input type="checkbox" class="cityCheckbox" value="Charlotte"> Charlotte</label><br>
+        <label><input type="checkbox" class="cityCheckbox" value="Chicago"> Chicago</label><br>
+        <label><input type="checkbox" class="cityCheckbox" value="Phoenix"> Phoenix</label><br>
+        <label><input type="checkbox" class="cityCheckbox" value="Jacksonville"> Jacksonville</label><br>
+        <label><input type="checkbox" class="cityCheckbox" value="Philadelphia"> Philadelphia</label><br>
+    </div>
 
-        <!-- DELETE THE FOLLOWING DIV IF YOU ONLY HAVE 1 WIDGET. -->
-        <div class="item"><!-- Your widget 2 code goes here. -->
-            <!-- Widget 2 title -->
-            <!-- Widget 2 element -->
-        </div>
+    <!-- DELETE THE FOLLOWING DIV IF YOU ONLY HAVE 1 WIDGET. -->
+    <div class="item"><!-- Your widget 2 code goes here. -->
+        <!-- Widget 2 title -->
+        <!-- Widget 2 element -->
+    </div>
     </div>
 
     <!-- CHART(S) -->
     <div class="item chart-container">
         <h2>Mean Tempature 07-2014 -> 07-2015</h2>
-        <svg id="lineChart1" width="900" height="400"></svg> <!-- If you change this ID name, you must change it in main.js too -->
+        <svg id="lineChart1" width="900" height="400"></svg>
+        <!-- If you change this ID name, you must change it in main.js too -->
     </div>
     <script src="main.js"></script>
 </body>
+
 </html>
 
 <!-- Starter code polished with assistance from DeepSeek. -->
