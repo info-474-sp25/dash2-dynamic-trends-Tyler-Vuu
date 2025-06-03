@@ -61,23 +61,71 @@ d3.csv("weather.csv").then(data => {
         .attr("x", -height / 2)
         .attr("text-anchor", "middle")
         .text("Mean Temperature (°F)");
-    // ==========================================
-    //         CHART 2 (if applicable)
-    // ==========================================
-
-    // 3.b: SET SCALES FOR CHART 2
+    
 
 
-    // 4.b: PLOT DATA FOR CHART 2
 
 
-    // 5.b: ADD AXES FOR CHART 
 
 
-    // 6.b: ADD LABELS FOR CHART 2
 
+        // Populate year dropdown
+const years = Array.from(new Set(data.map(d => d.date.getFullYear())));
+years.forEach(year => {
+    d3.select("#yearSelect").append("option").attr("value", year).text(year);
+});
 
-    // 7.b: ADD INTERACTIVITY FOR CHART 2
+// Filtering function
+function updateChart(selectedYear) {
+    const filteredData = selectedYear === "all" ? data : data.filter(d => d.date.getFullYear() == selectedYear);
+
+    // Update scales
+    x1.domain(d3.extent(filteredData, d => d.date));
+    y1.domain([0, d3.max(filteredData, d => d.temp)]).nice();
+
+    // Update line
+    svg1_RENAME.selectAll("path")
+        .datum(filteredData)
+        .transition()
+        .duration(750)
+        .attr("d", d3.line()
+            .x(d => x1(d.date))
+            .y(d => y1(d.temp))
+        );
+
+    // Update circles
+    svg1_RENAME.selectAll("circle").remove();
+    svg1_RENAME.selectAll("circle")
+        .data(filteredData)
+        .enter()
+        .append("circle")
+        .attr("cx", d => x1(d.date))
+        .attr("cy", d => y1(d.temp))
+        .attr("r", 3)
+        .attr("fill", "steelblue")
+        .on("mouseover", (event, d) => {
+            tooltip.transition().duration(200).style("opacity", 1);
+            tooltip.html(`<strong>Date:</strong> ${d3.timeFormat("%B %d, %Y")(d.date)}<br><strong>Temp:</strong> ${d.temp} °F`)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mouseout", () => tooltip.transition().duration(300).style("opacity", 0));
+
+    // Update axes
+    svg1_RENAME.select("g").call(d3.axisLeft(y1));
+    svg1_RENAME.select("g:nth-of-type(2)")
+        .transition()
+        .duration(750)
+        .call(d3.axisBottom(x1).ticks(d3.timeMonth.every(1)).tickFormat(d3.timeFormat("%b-%Y")))
+        .selectAll("text")
+        .attr("transform", "rotate(-45)")
+        .style("text-anchor", "end");
+}
+
+// Bind dropdown to update
+d3.select("#yearSelect").on("change", function () {
+    updateChart(this.value);
+});
 
 
 });
