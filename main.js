@@ -22,6 +22,8 @@ d3.csv("weather.csv").then(data => {
 
     fullData = data;
     updateChart(getSelectedCities());
+}).catch(error => {
+    console.error("Error loading CSV:", error);
 });
 
 // 3: Get Selected Cities from Checkboxes
@@ -48,28 +50,28 @@ function updateChart(selectedCities) {
         .range([0, width]);
 
     const y = d3.scaleLinear()
-        .domain([0, d3.max(filteredData, d => d.temp)]).nice()
+        .domain(d3.extent(filteredData, d => d.temp)).nice()
         .range([height, 0]);
 
     // Line generator
     const line = d3.line()
         .x(d => x(d.date))
-        .y(d => y(d.temp));
+        .y(d => y(d.temp))
+        .defined(d => !isNaN(d.temp) && d.temp !== null); // Handle missing values
 
     const color = d3.scaleOrdinal(d3.schemeTableau10);
 
     // DRAW LINES for each city
-    let i = 0;
     for (const [city, values] of cityData.entries()) {
+        // Sort values by date to ensure proper line drawing
+        const sortedValues = values.sort((a, b) => a.date - b.date);
+        
         svg1.append("path")
-            .datum(values)
+            .datum(sortedValues)
             .attr("fill", "none")
             .attr("stroke", color(city))
-            .attr("stroke-width", 1.5)
+            .attr("stroke-width", 2)
             .attr("d", line);
-
-        // Optional: Add labels or legends here
-        i++;
     }
 
     // X Axis
@@ -90,11 +92,39 @@ function updateChart(selectedCities) {
         .attr("x", -height / 2)
         .attr("text-anchor", "middle")
         .text("Mean Temperature (°F)");
+
+    // Add legend
+    const legend = svg1.append("g")
+        .attr("class", "legend")
+        .attr("transform", `translate(${width - 120}, 20)`);
+
+    let legendY = 0;
+    for (const city of selectedCities) {
+        const legendItem = legend.append("g")
+            .attr("transform", `translate(0, ${legendY})`);
+
+        legendItem.append("line")
+            .attr("x1", 0)
+            .attr("x2", 15)
+            .attr("stroke", color(city))
+            .attr("stroke-width", 2);
+
+        legendItem.append("text")
+            .attr("x", 20)
+            .attr("y", 0)
+            .attr("dy", "0.35em")
+            .style("font-size", "12px")
+            .text(city);
+
+        legendY += 20;
+    }
 }
 
-// 5: Add Event Listeners to Checkboxes
-document.querySelectorAll(".cityCheckbox").forEach(cb => {
-    cb.addEventListener("change", () => {
-        updateChart(getSelectedCities());
+// 5: Add Event Listeners to Checkboxes (when DOM is loaded)
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll(".cityCheckbox").forEach(cb => {
+        cb.addEventListener("change", () => {
+            updateChart(getSelectedCities());
+        });
     });
 });
