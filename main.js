@@ -82,7 +82,7 @@ function updateChart(selectedCities) {
         .selectAll("text")
         .attr("transform", "rotate(-45)")
         .style("text-anchor", "end");
-        
+
     //X Axis
     svg1.append("text")
     .attr("x", width / 2)
@@ -105,7 +105,7 @@ function updateChart(selectedCities) {
     // legend
     const legend = svg1.append("g")
         .attr("class", "legend")
-        .attr("transform", `translate(0, ${height - 30})`);
+        .attr("transform", `translate(0, ${height - 150})`);
 
     let legendX = 0;
     for (const city of selectedCities) {
