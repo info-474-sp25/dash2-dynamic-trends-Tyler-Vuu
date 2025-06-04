@@ -82,6 +82,14 @@ function updateChart(selectedCities) {
         .selectAll("text")
         .attr("transform", "rotate(-45)")
         .style("text-anchor", "end");
+        
+    //X Axis
+    svg1.append("text")
+    .attr("x", width / 2)
+    .attr("y", height + margin.bottom - 10) // adjust -10 as needed
+    .attr("text-anchor", "middle")
+    .style("font-size", "14px")
+    .text("Date");
 
     // Y Axis
     svg1.append("g").call(d3.axisLeft(y));
@@ -97,7 +105,7 @@ function updateChart(selectedCities) {
     // legend
     const legend = svg1.append("g")
         .attr("class", "legend")
-        .attr("transform", `translate(0, ${height + 40})`);
+        .attr("transform", `translate(0, ${height - 30})`);
 
     let legendX = 0;
     for (const city of selectedCities) {
@@ -146,3 +154,37 @@ cityCheckboxes.forEach(cb => {
         updateChart(getSelectedCities());
     });
 });
+
+
+// 7: ADD TOOLTIP FUNCTIONALITY
+const tooltip = d3.select("#tooltip");
+
+// Create a bisector to find the closest date
+const bisectDate = d3.bisector(d => d.date).left;
+
+// Add overlay for capturing mouse events
+svg1_RENAME.append("rect")
+    .attr("width", width)
+    .attr("height", height)
+    .style("fill", "none")
+    .style("pointer-events", "all")
+    .on("mousemove", function(event) {
+        const [mx] = d3.pointer(event);
+        const x0 = x1.invert(mx);
+        const i = bisectDate(data, x0, 1);
+        const d0 = data[i - 1];
+        const d1 = data[i];
+        const d = x0 - d0.date > d1.date - x0 ? d1 : d0;
+
+        tooltip
+            .style("opacity", 1)
+            .html(`
+                <strong>${d3.timeFormat("%B %d, %Y")(d.date)}</strong><br>
+                Temp: ${d.temp} °F
+            `)
+            .style("left", (event.pageX + 15) + "px")
+            .style("top", (event.pageY - 28) + "px");
+    })
+    .on("mouseout", () => {
+        tooltip.style("opacity", 0);
+    });
