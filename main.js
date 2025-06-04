@@ -2,6 +2,9 @@
 const margin = { top: 50, right: 30, bottom: 100, left: 70 };
 const width = 900 - margin.left - margin.right;
 const height = 400 - margin.top - margin.bottom;
+const selectAllCheckbox = document.getElementById("selectAllCities");
+const cityCheckboxes = document.querySelectorAll(".cityCheckbox");
+
 
 const svg1 = d3.select("#lineChart1")
     .append("svg")
@@ -125,5 +128,21 @@ document.addEventListener('DOMContentLoaded', function() {
         cb.addEventListener("change", () => {
             updateChart(getSelectedCities());
         });
+    });
+});
+
+
+// 1. When "Select All" is checked, check all cities
+selectAllCheckbox.addEventListener("change", () => {
+    cityCheckboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
+    updateChart(getSelectedCities());
+});
+
+// 2. When a city is clicked, uncheck "Select All" if not all are selected
+cityCheckboxes.forEach(cb => {
+    cb.addEventListener("change", () => {
+        const allChecked = Array.from(cityCheckboxes).every(cb => cb.checked);
+        selectAllCheckbox.checked = allChecked;
+        updateChart(getSelectedCities());
     });
 });
