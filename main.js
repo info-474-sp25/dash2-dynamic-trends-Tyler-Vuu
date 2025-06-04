@@ -156,29 +156,70 @@ cityCheckboxes.forEach(cb => {
     });
 });
 
-
-var svg = d3.select("#my_dataviz")
-  .append("svg")
-    .attr("width", 400)
-    .attr("height", 400)
-
-// Append a circle
-svg.append("circle")
-  .attr("id", "circleBasicTooltip")
-  .attr("cx", 150)
-  .attr("cy", 200)
-  .attr("r", 40)
-  .attr("fill", "#69b3a2")
-
-// create a tooltip
-var tooltip = d3.select("#my_dataviz")
-  .append("div")
+const tooltip = d3.select("body")
+    .append("div")
+    .attr("id", "tooltip")
     .style("position", "absolute")
-    .style("visibility", "hidden")
-    .text("I'm a circle!");
+    .style("background", "rgba(0, 0, 0, 0.8)")
+    .style("color", "white")
+    .style("padding", "10px")
+    .style("border-radius", "5px")
+    .style("pointer-events", "none")
+    .style("opacity", 0)
+    .style("font-size", "12px");
 
-//
-d3.select("#circleBasicTooltip")
-  .on("mouseover", function(){return tooltip.style("visibility", "visible");})
-  .on("mousemove", function(){return tooltip.style("top", (event.pageY-800)+"px").style("left",(event.pageX-800)+"px");})
-  .on("mouseout", function(){return tooltip.style("visibility", "hidden");});
+    // 5: Tooltip Function
+function addTooltip(x, y, fullData, cityData, color) {
+    // Create a bisector to find the closest date
+    const bisectDate = d3.bisector(d => d.date).left;
+
+    // Add overlay for capturing mouse events
+    svg1.append("rect")
+        .attr("width", width)
+        .attr("height", height)
+        .style("fill", "none")
+        .style("pointer-events", "all")
+        .on("mousemove", function(event) {
+            const [mx] = d3.pointer(event);
+            const x0 = x.invert(mx);
+            
+            // Find closest data points for each city
+            let closestPoints = [];
+            
+            for (const [city, values] of cityData.entries()) {
+                const sortedValues = values.sort((a, b) => a.date - b.date);
+                const i = bisectDate(sortedValues, x0, 1);
+                const d0 = sortedValues[i - 1];
+                const d1 = sortedValues[i];
+                
+                if (d0 && d1) {
+                    const d = x0 - d0.date > d1.date - x0 ? d1 : d0;
+                    closestPoints.push({ city, data: d, color: color(city) });
+                } else if (d0) {
+                    closestPoints.push({ city, data: d0, color: color(city) });
+                } else if (d1) {
+                    closestPoints.push({ city, data: d1, color: color(city) });
+                }
+            }
+
+            if (closestPoints.length > 0) {
+                // Sort by temperature for consistent display
+                closestPoints.sort((a, b) => b.data.temp - a.data.temp);
+                
+                let tooltipContent = `<strong>${d3.timeFormat("%B %d, %Y")(closestPoints[0].data.date)}</strong><br>`;
+                
+                closestPoints.forEach(point => {
+                    tooltipContent += `<span style="color: ${point.color}">● ${point.city}: ${point.data.temp.toFixed(1)}°F</span><br>`;
+                });
+
+                tooltip
+                    .style("opacity", 1)
+                    .html(tooltipContent)
+                    .style("left", (event.pageX + 15) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+            }
+        })
+        .on("mouseout", () => {
+            tooltip.style("opacity", 0);
+        });
+}
