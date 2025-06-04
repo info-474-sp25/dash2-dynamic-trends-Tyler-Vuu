@@ -105,7 +105,7 @@ function updateChart(selectedCities) {
     // legend
     const legend = svg1.append("g")
         .attr("class", "legend")
-        .attr("transform", `translate(0, ${height - 150})`);
+        .attr("transform", `translate(0, ${height - 500})`);
 
     let legendX = 0;
     for (const city of selectedCities) {
