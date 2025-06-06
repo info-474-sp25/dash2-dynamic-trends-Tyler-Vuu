@@ -20,17 +20,21 @@
     </div>
 
     <!-- INTERACTIVE WIDGETS -->
-    <div class="item">
-        <label><strong>Filter by City:</strong></label><br>
-        <label><input type="checkbox" id="selectAllCities"> Select All Cities</label><br>
-        <label><input type="checkbox" class="cityCheckbox" value="Indianapolis"> Indianapolis</label><br>
-        <label><input type="checkbox" class="cityCheckbox" value="Charlotte"> Charlotte</label><br>
-        <label><input type="checkbox" class="cityCheckbox" value="Chicago"> Chicago</label><br>
-        <label><input type="checkbox" class="cityCheckbox" value="Phoenix"> Phoenix</label><br>
-        <label><input type="checkbox" class="cityCheckbox" value="Jacksonville"> Jacksonville</label><br>
-        <label><input type="checkbox" class="cityCheckbox" value="Philadelphia"> Philadelphia</label><br>
+    <div class="item horizontal-container">
+        <div class="item">
+            <label><strong>Filter by City:</strong></label><br>
+            <label><input type="checkbox" id="selectAllCities"> Select All Cities</label><br>
+            <label><input type="checkbox" class="cityCheckbox" value="Indianapolis"> Indianapolis</label><br>
+            <label><input type="checkbox" class="cityCheckbox" value="Charlotte"> Charlotte</label><br>
+            <label><input type="checkbox" class="cityCheckbox" value="Chicago"> Chicago</label><br>
+            <label><input type="checkbox" class="cityCheckbox" value="Phoenix"> Phoenix</label><br>
+            <label><input type="checkbox" class="cityCheckbox" value="Jacksonville"> Jacksonville</label><br>
+            <label><input type="checkbox" class="cityCheckbox" value="Philadelphia"> Philadelphia</label><br>
+        </div>
+        <div class="item">
+            <button id="toggleTrendlines">Toggle Trendlines</button>
+        </div>
     </div>
-
     <!-- CHART(S) -->
     <div class="item chart-container">
         <h2>US Cities Mean Tempature 07-2014 -> 07-2015</h2>
