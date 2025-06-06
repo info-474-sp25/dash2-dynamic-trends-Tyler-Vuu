@@ -2,9 +2,6 @@
 const margin = { top: 50, right: 30, bottom: 100, left: 70 };
 const width = 900 - margin.left - margin.right;
 const height = 400 - margin.top - margin.bottom;
-const selectAllCheckbox = document.getElementById("selectAllCities");
-const cityCheckboxes = document.querySelectorAll(".cityCheckbox");
-
 
 const svg1 = d3.select("#lineChart1")
     .append("svg")
@@ -14,6 +11,23 @@ const svg1 = d3.select("#lineChart1")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
 let fullData = []; // Global variable to hold original data
+
+// Create tooltip
+const tooltip = d3.select("body")
+    .append("div")
+    .attr("id", "tooltip")
+    .style("position", "absolute")
+    .style("background", "rgba(0, 0, 0, 0.9)")
+    .style("color", "white")
+    .style("padding", "12px")
+    .style("border-radius", "6px")
+    .style("pointer-events", "none")
+    .style("opacity", 0)
+    .style("font-size", "13px")
+    .style("font-family", "Arial, sans-serif")
+    .style("box-shadow", "0 2px 4px rgba(0,0,0,0.3)")
+    .style("z-index", "1000")
+    .style("max-width", "200px");
 
 // 2: LOAD CSV
 d3.csv("weather.csv").then(data => {
@@ -25,7 +39,9 @@ d3.csv("weather.csv").then(data => {
 
     fullData = data;
     updateChart(getSelectedCities());
-})
+}).catch(error => {
+    console.error("Error loading CSV:", error);
+});
 
 // 3: Get Selected Cities from Checkboxes
 function getSelectedCities() {
@@ -58,13 +74,12 @@ function updateChart(selectedCities) {
     const line = d3.line()
         .x(d => x(d.date))
         .y(d => y(d.temp))
-        .defined(d => !isNaN(d.temp) && d.temp !== null); // Handle missing values
+        .defined(d => !isNaN(d.temp) && d.temp !== null);
 
     const color = d3.scaleOrdinal(d3.schemeTableau10);
 
-    // graphs for each city
+    // Draw lines for each city
     for (const [city, values] of cityData.entries()) {
-        // Sort values by date to ensure proper line drawing
         const sortedValues = values.sort((a, b) => a.date - b.date);
         
         svg1.append("path")
@@ -83,13 +98,13 @@ function updateChart(selectedCities) {
         .attr("transform", "rotate(-45)")
         .style("text-anchor", "end");
 
-    //X Axis
+    // X Axis Label
     svg1.append("text")
-    .attr("x", width / 2)
-    .attr("y", height + margin.bottom - 10) // adjust -10 as needed
-    .attr("text-anchor", "middle")
-    .style("font-size", "14px")
-    .text("Date");
+        .attr("x", width / 2)
+        .attr("y", height + margin.bottom - 10)
+        .attr("text-anchor", "middle")
+        .style("font-size", "14px")
+        .text("Date");
 
     // Y Axis
     svg1.append("g").call(d3.axisLeft(y));
@@ -102,11 +117,10 @@ function updateChart(selectedCities) {
         .attr("text-anchor", "middle")
         .text("Mean Temperature (°F)");
 
-    // legend
+    // Legend
     const legend = svg1.append("g")
         .attr("class", "legend")
-    //fix here
-        .attr("transform", `translate(0, ${height - 150})`);
+        .attr("transform", `translate(0, ${height - 250})`);
 
     let legendX = 0;
     for (const city of selectedCities) {
@@ -126,61 +140,38 @@ function updateChart(selectedCities) {
             .style("font-size", "12px")
             .text(city);
 
-        // Calculate width of this legend item for next positioning
-        legendX += city.length * 8 + 40; // Approximate width based on text length
+        legendX += city.length * 8 + 40;
     }
+
+    // Add tooltip functionality
+    addTooltip(x, y, filteredData, cityData, color);
 }
 
-// 5: Add Event Listeners to Checkboxes (when DOM is loaded)
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll(".cityCheckbox").forEach(cb => {
-        cb.addEventListener("change", () => {
-            updateChart(getSelectedCities());
-        });
-    });
-});
-
-
-// 1. When "Select All" is checked, check all cities
-selectAllCheckbox.addEventListener("change", () => {
-    cityCheckboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
-    updateChart(getSelectedCities());
-});
-
-// 2. When a city is clicked, uncheck "Select All" if not all are selected
-cityCheckboxes.forEach(cb => {
-    cb.addEventListener("change", () => {
-        const allChecked = Array.from(cityCheckboxes).every(cb => cb.checked);
-        selectAllCheckbox.checked = allChecked;
-        updateChart(getSelectedCities());
-    });
-});
-
-const tooltip = d3.select("body")
-    .append("div")
-    .attr("id", "tooltip")
-    .style("position", "absolute")
-    .style("background", "rgba(0, 0, 0, 0.8)")
-    .style("color", "white")
-    .style("padding", "10px")
-    .style("border-radius", "5px")
-    .style("pointer-events", "none")
-    .style("opacity", 0)
-    .style("font-size", "12px");
-
-    // 5: Tooltip Function
-function addTooltip(x, y, fullData, cityData, color) {
+// 5: Tooltip Function
+function addTooltip(x, y, filteredData, cityData, color) {
     // Create a bisector to find the closest date
     const bisectDate = d3.bisector(d => d.date).left;
 
-    // Add overlay for capturing mouse events
-    svg1.append("rect")
+    // Add overlay for capturing mouse events - make sure it's on top
+    const overlay = svg1.append("rect")
+        .attr("class", "overlay")
         .attr("width", width)
         .attr("height", height)
         .style("fill", "none")
         .style("pointer-events", "all")
-        .on("mousemove", function(event) {
-            const [mx] = d3.pointer(event);
+        .style("cursor", "crosshair");
+
+    // Add mouse event handlers
+    overlay.on("mousemove", function(event) {
+        try {
+            const [mx, my] = d3.pointer(event, this);
+            
+            // Make sure we're within bounds
+            if (mx < 0 || mx > width || my < 0 || my > height) {
+                tooltip.style("opacity", 0);
+                return;
+            }
+            
             const x0 = x.invert(mx);
             
             // Find closest data points for each city
@@ -188,17 +179,29 @@ function addTooltip(x, y, fullData, cityData, color) {
             
             for (const [city, values] of cityData.entries()) {
                 const sortedValues = values.sort((a, b) => a.date - b.date);
+                
+                if (sortedValues.length === 0) continue;
+                
                 const i = bisectDate(sortedValues, x0, 1);
                 const d0 = sortedValues[i - 1];
                 const d1 = sortedValues[i];
                 
+                let closestPoint = null;
+                
                 if (d0 && d1) {
-                    const d = x0 - d0.date > d1.date - x0 ? d1 : d0;
-                    closestPoints.push({ city, data: d, color: color(city) });
+                    closestPoint = x0 - d0.date > d1.date - x0 ? d1 : d0;
                 } else if (d0) {
-                    closestPoints.push({ city, data: d0, color: color(city) });
+                    closestPoint = d0;
                 } else if (d1) {
-                    closestPoints.push({ city, data: d1, color: color(city) });
+                    closestPoint = d1;
+                }
+                
+                if (closestPoint && !isNaN(closestPoint.temp)) {
+                    closestPoints.push({ 
+                        city, 
+                        data: closestPoint, 
+                        color: color(city) 
+                    });
                 }
             }
 
@@ -212,14 +215,55 @@ function addTooltip(x, y, fullData, cityData, color) {
                     tooltipContent += `<span style="color: ${point.color}">● ${point.city}: ${point.data.temp.toFixed(1)}°F</span><br>`;
                 });
 
+                // Get mouse position relative to the page
+                const rect = svg1.node().getBoundingClientRect();
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+                
                 tooltip
-                    .style("opacity", 1)
+                    .style("opacity", 0.9)
                     .html(tooltipContent)
-                    .style("left", (event.pageX + 15) + "px")
-                    .style("top", (event.pageY - 28) + "px");
+                    .style("left", (rect.left + scrollLeft + mx + 15) + "px")
+                    .style("top", (rect.top + scrollTop + my - 28) + "px");
+            } else {
+                tooltip.style("opacity", 0);
             }
-        })
-        .on("mouseout", () => {
+        } catch (error) {
+            console.error("Tooltip error:", error);
             tooltip.style("opacity", 0);
-        });
+        }
+    })
+    .on("mouseout", function() {
+        tooltip.style("opacity", 0);
+    })
+    .on("mouseleave", function() {
+        tooltip.style("opacity", 0);
+    });
 }
+
+// 6: Add Event Listeners to Checkboxes (when DOM is loaded)
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllCheckbox = document.getElementById("selectAllCities");
+    const cityCheckboxes = document.querySelectorAll(".cityCheckbox");
+
+    // Individual checkbox listeners
+    document.querySelectorAll(".cityCheckbox").forEach(cb => {
+        cb.addEventListener("change", () => {
+            updateChart(getSelectedCities());
+            
+            // Update select all checkbox state
+            if (selectAllCheckbox) {
+                const allChecked = Array.from(cityCheckboxes).every(cb => cb.checked);
+                selectAllCheckbox.checked = allChecked;
+            }
+        });
+    });
+
+    // Select all checkbox listener
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener("change", () => {
+            cityCheckboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
+            updateChart(getSelectedCities());
+        });
+    }
+});
