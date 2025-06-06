@@ -11,7 +11,6 @@ const svg1 = d3.select("#lineChart1")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
 let fullData = []; // Global variable to hold original data
-let showTrendlines = true; // Toggle for showing trendlines
 
 // Create tooltip
 const tooltip = d3.select("body")
@@ -50,27 +49,7 @@ function getSelectedCities() {
     return Array.from(checkboxes).map(cb => cb.value);
 }
 
-// 4: Linear Regression Function
-function linearRegression(data) {
-    const n = data.length;
-    let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
-    
-    data.forEach(d => {
-        const x = d.date.getTime(); // Convert date to timestamp
-        const y = d.temp;
-        sumX += x;
-        sumY += y;
-        sumXY += x * y;
-        sumXX += x * x;
-    });
-    
-    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-    const intercept = (sumY - slope * sumX) / n;
-    
-    return { slope, intercept };
-}
-
-// 5: Update Chart Based on Selected Cities
+// 4: Update Chart Based on Selected Cities
 function updateChart(selectedCities) {
     // Clear existing content
     svg1.selectAll("*").remove();
@@ -99,45 +78,16 @@ function updateChart(selectedCities) {
 
     const color = d3.scaleOrdinal(d3.schemeTableau10);
 
-    // Draw lines and trendlines for each city
+    // Draw lines for each city
     for (const [city, values] of cityData.entries()) {
         const sortedValues = values.sort((a, b) => a.date - b.date);
         
-        // Draw main data line
         svg1.append("path")
             .datum(sortedValues)
             .attr("fill", "none")
             .attr("stroke", color(city))
             .attr("stroke-width", 2)
-            .attr("d", line)
-            .attr("class", "data-line");
-
-        // Draw trendline if enabled
-        if (showTrendlines && sortedValues.length > 1) {
-            const regression = linearRegression(sortedValues);
-            const dateExtent = d3.extent(sortedValues, d => d.date);
-            
-            const trendlineData = [
-                {
-                    date: dateExtent[0],
-                    temp: regression.slope * dateExtent[0].getTime() + regression.intercept
-                },
-                {
-                    date: dateExtent[1],
-                    temp: regression.slope * dateExtent[1].getTime() + regression.intercept
-                }
-            ];
-
-            svg1.append("path")
-                .datum(trendlineData)
-                .attr("fill", "none")
-                .attr("stroke", color(city))
-                .attr("stroke-width", 2)
-                .attr("stroke-dasharray", "5,5")
-                .attr("opacity", 0.7)
-                .attr("d", line)
-                .attr("class", "trendline");
-        }
+            .attr("d", line);
     }
 
     // X Axis
@@ -167,59 +117,45 @@ function updateChart(selectedCities) {
         .attr("text-anchor", "middle")
         .text("Mean Temperature (°F)");
 
-    // Legend
+    // Legend - positioned under title and centered
     const legend = svg1.append("g")
         .attr("class", "legend")
-        .attr("transform", `translate(0, ${height - 280})`);
+        .attr("transform", `translate(0, -30)`);
 
-    let legendY = 0;
+    // Calculate total width needed for legend
+    let totalLegendWidth = 0;
+    selectedCities.forEach(city => {
+        totalLegendWidth += city.length * 8 + 40; // approximate width per city
+    });
+
+    // Starting position to center the legend
+    let legendX = (width - totalLegendWidth) / 2;
+    
     for (const city of selectedCities) {
         const legendItem = legend.append("g")
-            .attr("transform", `translate(0, ${legendY})`);
+            .attr("transform", `translate(${legendX}, 0)`);
 
-        // Solid line for data
         legendItem.append("line")
             .attr("x1", 0)
             .attr("x2", 15)
             .attr("stroke", color(city))
             .attr("stroke-width", 2);
 
-        // Dashed line for trendline
-        if (showTrendlines) {
-            legendItem.append("line")
-                .attr("x1", 20)
-                .attr("x2", 35)
-                .attr("stroke", color(city))
-                .attr("stroke-width", 2)
-                .attr("stroke-dasharray", "3,3")
-                .attr("opacity", 0.7);
-        }
-
         legendItem.append("text")
-            .attr("x", showTrendlines ? 40 : 20)
+            .attr("x", 20)
             .attr("y", 0)
             .attr("dy", "0.35em")
             .style("font-size", "12px")
             .text(city);
 
-        legendY += 20;
-    }
-
-    // Add legend explanation
-    if (showTrendlines) {
-        legend.append("text")
-            .attr("x", 0)
-            .attr("y", legendY + 10)
-            .style("font-size", "11px")
-            .style("fill", "#666")
-            .text("Solid: Actual data, Dashed: Trend");
+        legendX += city.length * 8 + 40;
     }
 
     // Add tooltip functionality
     addTooltip(x, y, filteredData, cityData, color);
 }
 
-// 6: Tooltip Function (unchanged)
+// 5: Tooltip Function
 function addTooltip(x, y, filteredData, cityData, color) {
     // Create a bisector to find the closest date
     const bisectDate = d3.bisector(d => d.date).left;
@@ -313,13 +249,7 @@ function addTooltip(x, y, filteredData, cityData, color) {
     });
 }
 
-// 7: Toggle Trendlines Function
-function toggleTrendlines() {
-    showTrendlines = !showTrendlines;
-    updateChart(getSelectedCities());
-}
-
-// 8: Add Event Listeners to Checkboxes (when DOM is loaded)
+// 6: Add Event Listeners to Checkboxes (when DOM is loaded)
 document.addEventListener('DOMContentLoaded', function() {
     const selectAllCheckbox = document.getElementById("selectAllCities");
     const cityCheckboxes = document.querySelectorAll(".cityCheckbox");
@@ -343,11 +273,5 @@ document.addEventListener('DOMContentLoaded', function() {
             cityCheckboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
             updateChart(getSelectedCities());
         });
-    }
-
-    // Add trendline toggle button if it exists
-    const trendlineToggle = document.getElementById("toggleTrendlines");
-    if (trendlineToggle) {
-        trendlineToggle.addEventListener("click", toggleTrendlines);
     }
 });
